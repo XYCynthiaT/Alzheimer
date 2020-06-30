@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1593469752731.000,
+    "dirty" : false,
+    "encoding" : "ISO8859-1",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "4106EC2C",
+    "lastKnownWriteTime" : 1593474459,
+    "last_content_update" : 1593474459378,
+    "path" : "C:/Users/xytan/Downloads/Alzheimer/data/RNA.R",
+    "project_path" : "data/RNA.R",
+    "properties" : {
+        "cursorPosition" : "2,41",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : true,
+    "source_window" : "",
+    "type" : "r_source"
+}

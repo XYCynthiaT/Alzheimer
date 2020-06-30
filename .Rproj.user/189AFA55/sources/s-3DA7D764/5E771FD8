@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1593459627218.000,
+    "dirty" : false,
+    "encoding" : "ISO8859-1",
+    "folds" : "",
+    "hash" : "2447598146",
+    "id" : "5E771FD8",
+    "lastKnownWriteTime" : 1593492682,
+    "last_content_update" : 1593492682627,
+    "path" : "C:/Users/xytan/Downloads/Alzheimer/app/app.R",
+    "project_path" : "app/app.R",
+    "properties" : {
+        "cursorPosition" : "135,46",
+        "scrollLine" : "104"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

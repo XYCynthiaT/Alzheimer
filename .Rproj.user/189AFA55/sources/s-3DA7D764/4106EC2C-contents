@@ -1,0 +1,78 @@
+setwd(dirname(parent.frame(2)$ofile))
+
+pkgs=c("tidyverse", "biomaRt", "Metabase")
+for(pkg in pkgs){
+        suppressPackageStartupMessages(library(pkg, character.only=TRUE))
+}
+
+# CBE ---------------------------------------------------------------------
+
+edata_cbe <- read.table(
+        "../raw-data/RNAseq_geneCounts/MayoRNAseq_RNAseq_CBE_geneCounts_normalized.tsv",
+        header = T
+) %>%
+        column_to_rownames("ensembl_id") %>%
+        as.matrix()
+
+pdata_cbe <- read.csv(
+        "../raw-data/MayoRNAseq_RNAseq_CER_covariates.csv",
+        header = T, 
+) %>%
+        filter(Diagnosis %in% c("AD", "Control")) %>%
+        mutate(Diagnosis = droplevels(Diagnosis)) %>%
+        column_to_rownames("SampleID")
+
+colnames(edata_cbe) <- sub("X", "", colnames(edata_cbe))
+edata_cbe <- edata_cbe[, rownames(pdata_cbe)]
+
+annot = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+annot = getBM(
+        attributes = c(
+                "ensembl_gene_id", "description", "gene_biotype", "chromosome_name",
+                "start_position", "end_position", "strand"
+        ),
+        mart = annot
+)
+
+fdata_cbe <- annot %>%
+        dplyr::filter(ensembl_gene_id %in% rownames(edata_cbe)) %>%
+        column_to_rownames("ensembl_gene_id")
+edata_cbe <- edata_cbe[rownames(fdata_cbe),]
+
+edata_cbe <- conc_table(edata_cbe)
+pdata_cbe <- sample_table(pdata_cbe)
+fdata_cbe <- feature_data(fdata_cbe)
+cbe = MultxSet(edata_cbe, pdata_cbe, fdata_cbe)
+
+# TCX ---------------------------------------------------------------------
+
+edata_tcx <- read.table(
+        "../raw-data/RNAseq_geneCounts/MayoRNAseq_RNAseq_TCX_geneCounts_normalized.tsv",
+        header = T
+) %>%
+        column_to_rownames("ensembl_id") %>%
+        as.matrix()
+
+pdata_tcx <- read.csv(
+        "../raw-data/MayoRNAseq_RNAseq_TCX_covariates.csv",
+        header = T, 
+) %>%
+        filter(Diagnosis %in% c("AD", "Control")) %>%
+        mutate(Diagnosis = droplevels(Diagnosis)) %>%
+        column_to_rownames("SampleID")
+
+colnames(edata_tcx) <- sub("X", "", colnames(edata_tcx))
+edata_tcx <- edata_tcx[, rownames(pdata_tcx)]
+
+fdata_tcx <- annot %>%
+        dplyr::filter(ensembl_gene_id %in% rownames(edata_tcx)) %>%
+        column_to_rownames("ensembl_gene_id")
+edata_tcx <- edata_tcx[rownames(fdata_tcx),]
+
+edata_tcx <- conc_table(edata_tcx)
+pdata_tcx <- sample_table(pdata_tcx)
+fdata_tcx <- feature_data(fdata_tcx)
+tcx = MultxSet(edata_tcx, pdata_tcx, fdata_tcx)
+
+RNA = list(CBE = cbe, TCX = tcx)
+saveRDS(RNA, file = "RNA.RDS")
