@@ -1,0 +1,7 @@
+/* data-table enable scrollbar*/
+.datatables {
+    overflow: auto;
+}
+table {
+    white-space: nowrap;
+}
