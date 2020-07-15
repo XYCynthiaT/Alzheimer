@@ -1,9 +1,9 @@
-pkgs <- c("shiny", "dplyr", "ggplot2", "plotly", "shinydashboard", "HTSet", "DT")
-for (pkg in pkgs) {
-        suppressPackageStartupMessages(library(pkg, character.only = T))
-}
+# pkgs <- c("shiny", "dplyr", "ggplot2", "plotly", "shinydashboard", "HTSet", "DT")
+# for (pkg in pkgs) {
+#         suppressPackageStartupMessages(library(pkg, character.only = T))
+# }
 
-rna <- readRDS("../data/RNA_normalized.RDS")
+rna <- readRDS("data/RNA_normalized.RDS")
 load("data/differentialExp.rda")
 
 boxplotOutput <- function(gene_selected, region) {

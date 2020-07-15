@@ -1,0 +1,17 @@
+library(BiocManager)
+options(repos = BiocManager::repositories())
+library(shiny)
+library(shinydashboard)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(HTSet)
+library(DT)
+library(ggfortify)
+library(shinyauthr)
+library(shinyjs)
+library(shiny.router)
+library(enrichplot)
+
+dashboardHeader = eval(parse(text = deparse(shinydashboard::dashboardHeader)[-5]))
+

@@ -4,7 +4,7 @@ pkgs <- c("dplyr", "clusterProfiler", "biomaRt", "ggplot2")
 for (pkg in pkgs) {
         suppressPackageStartupMessages(library(pkg, character.only = T))
 }
-load("data.rda")
+load("differentialExp.rda")
 
 # Cerebellum --------------------------------------------------------------
 

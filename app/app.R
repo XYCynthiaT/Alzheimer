@@ -1,58 +1,55 @@
+source("global.R")
+source("user_base.R")
 source("de.R")
 source("pca.R")
 source("pathway.R")
+source("dashboard.R")
+source("authr.R")
 
-sidebar <- dashboardSidebar(
-        sidebarMenu(
-                # first menu
-                menuItem("Gene expression", tabName = "gene",
-                         menuSubItem("Differential Expression", tabName = "rna-de"),
-                         menuSubItem("Volcano and PCA", tabName = "rna-pca"),
-                         menuSubItem("Pathway Enrichment", tabName = "rna-pathway")
-                ),
-                # second menu
-                menuItem("Genetic variants", tabName = "variants"),
-                # third menu
-                menuItem("Proteomics", tabName = "proteomics"),
-                radioButtons("region", "Brain Regions",
-                             choices = c("Cerebellum" = "CBE",
-                                         "Temporal cortex" = "TCX"),
-                             selected = "CBE"
-                )
-        )
+router <- make_router(
+    default = route(
+        "login", 
+        ui = authrUI(NULL), 
+        server = function(input, output, session) {
+            callModule(authrServer, NULL)
+        }
+    ),
+    route(
+        "dashboard", 
+        ui = dashboardUI("dashboard"), 
+        server = function(input, output, session) {
+            dashboardServer("dashboard")
+        }
+    )
 )
 
-body <- dashboardBody(
-        tags$link(href="styles.css", rel="stylesheet"),
-        tabItems(
-                # the first subtab content
-                tabItem(
-                        tabName = "rna-de",
-                        deUI("rna-de")
-                ),
-                # the second subtab content
-                tabItem(
-                        tabName = "rna-pca",
-                        pcaUI("rna-pca")
-                ),
-                # the third subtab content
-                tabItem(
-                        tabName = "rna-pathway",
-                        pathwayUI("rna-pathway")
-                )
-        )
-)
+ui <- shinyUI(fluidPage(
+    title = "Alzheimer",
+    router_ui()
+))
 
-ui <- dashboardPage(
-        dashboardHeader(title = "MayoRNAseq"),
-        sidebar, body
-)
-
-server <- function(input, output, session) {
-        deServer("rna-de", region = reactive(input$region))
-        pcaServer("rna-pca", region = reactive(input$region))
-        pathwayServer("rna-pathway", region = reactive(input$region))
-}
+server <- shinyServer(function(input, output, session) {
+    credentials = callModule(authrServer, NULL)
+    router(input, output, session)
+    observe({
+        if(is.null(credentials())){
+            change_page("/login", mode = "push")
+        }else if (is.null(credentials()$user_auth)) {
+            change_page("/login", mode = "push")
+        }else if(credentials()$user_auth){
+            change_page("/dashboard", mode = "push")
+        } else {
+            print(credentials()$user_auth)
+            change_page("/login", mode = "push")
+        }
+    })
+    observe({
+        if(is_page("dashboard")) {
+            session$onFlushed(function(){
+                shinyjs::addClass(selector = "html body", class = "skin-blue")
+            }, once = FALSE)
+        }
+    })
+})
 
 shinyApp(ui, server)
-

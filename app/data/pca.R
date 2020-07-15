@@ -5,7 +5,7 @@ for (pkg in pkgs) {
         suppressPackageStartupMessages(library(pkg, character.only = T))
 }
 load("differentialExp.rda")
-rna_normalized <- readRDS("../../data/RNA_normalized.RDS")
+rna_normalized <- readRDS("RNA_normalized.RDS")
 
 # volcano plots
 # fit_cbe$trend <- ifelse(
@@ -81,5 +81,5 @@ print("done with TCX")
 # rownames(heatcol) = colnames(df_scale)
 # pheatmap(df_scale, show_rownames = F, show_colnames = F, annotation_col = heatcol)
 
-save(pca_cbe, pca_cbe, df_diag_cbe, df_diag_tcx, file = "pca.rda")
+save(pca_cbe, pca_tcx, df_diag_cbe, df_diag_tcx, file = "pca.rda")
 # save(vol_cbe, vol_tcx, PCA_cbe, PCA_tcx, file = "plots.rda")

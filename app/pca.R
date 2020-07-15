@@ -1,7 +1,7 @@
-pkgs <- c("shiny", "dplyr", "ggplot2", "plotly", "shinydashboard", "ggfortify")
-for (pkg in pkgs) {
-        suppressPackageStartupMessages(library(pkg, character.only = T))
-}
+# pkgs <- c("shiny", "dplyr", "ggplot2", "plotly", "shinydashboard", "ggfortify")
+# for (pkg in pkgs) {
+#         suppressPackageStartupMessages(library(pkg, character.only = T))
+# }
 
 # pcaEnv = new.env(parent = .GlobalEnv)
 load("data/pca.rda")

@@ -2,6 +2,12 @@
 .datatables {
     overflow: auto;
 }
+
 table {
     white-space: nowrap;
+}
+
+body .container-fluid {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }

@@ -6,7 +6,7 @@ for (pkg in pkgs) {
 }
 
 # load files from data
-rna <- readRDS("../../data/RNA.RDS")
+rna <- readRDS("RNA.RDS")
 
 # Create a Differential Gene Expression List Object
 d0_cbe <- DGEList(rna$CBE$edata)
@@ -25,6 +25,7 @@ d_cbe <- d0_cbe[cutoff_cbe,]
 d_tcx <- d0_tcx[cutoff_tcx,]
 # group <- factor(rna$CBE$pdata$Sex)
 # plotMDS(d_cbe, col = as.numeric(group))
+# plotMDS(cpm(d_cbe), col = as.numeric(group))
 
 # extracting normalized expression table
 logcpm_cbe <- cpm(d_cbe, prior.count=2, log=TRUE)
@@ -95,4 +96,4 @@ d <- rna$TCX$fdata %>%
 output_lm_tcx <- left_join(c, d, by = "ensembl_id")
 
 save(fit_cbe, fit_tcx, output_lm_cbe, output_lm_tcx, file = "differentialExp.rda")
-saveRDS(n_RNA, "../../data/RNA_normalized.RDS")
+saveRDS(n_RNA, "RNA_normalized.RDS")
