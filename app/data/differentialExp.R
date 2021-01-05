@@ -33,23 +33,29 @@ logcpm_tcx <- cpm(d_tcx, prior.count=2, log=TRUE)
 fdata_cbe <- rna$CBE$fdata[rownames(logcpm_cbe),]
 fdata_tcx <- rna$TCX$fdata[rownames(logcpm_tcx),]
 pdata_cbe <- rna$CBE$pdata 
-pdata_cbe$Diagnosis <- factor(pdata_cbe$Diagnosis, labels = c("Con", "PA", "PSP", "AD"),
-                              levels = c("Control", "PathologicAging", "PSP", "AD")
-)
 pdata_tcx <- rna$TCX$pdata 
-pdata_tcx$Diagnosis <- factor(pdata_tcx$Diagnosis, labels = c("Con", "PA", "PSP", "AD"),
-                              levels = c("Control", "PathologicAging", "PSP", "AD")
-)
 
 n_cbe <- HTSet(edata = logcpm_cbe, fdata = fdata_cbe, pdata = pdata_cbe)
 n_tcx <- HTSet(edata = logcpm_tcx, fdata = fdata_tcx, pdata = pdata_tcx)
 n_RNA = list(CBE = n_cbe, TCX = n_tcx)
 
+# 3 engines
+# model <- model.matrix(~ Diagnosis, data = rna$CBE$pdata)
+# cbe <- rna$CBE[rowSums(rna$CBE$edata)>50,]
+# test1 <- model_fit(cbe, model, "DiagnosisAD", "edgeR")
+# test2 <- model_fit(cbe, model, "DiagnosisAD", "DESeq2")
+# test3 <- model_fit(cbe, model, "DiagnosisAD", "limma")
+# par(mfrow = c(3, 1))
+# hist(test1$results$pval)
+# hist(test2$results$pval)
+# hist(test3$results$pval)
+# no difference.
+
 # fit the linear model
 design_cbe <- model.matrix(~ 0+Diagnosis, data = rna$CBE$pdata)
 transform_cbe <- voom(d_cbe, design_cbe, plot = F)
 fit_cbe <- lmFit(transform_cbe, design_cbe)
-contr_cbe = makeContrasts(DiagnosisAD - DiagnosisControl, levels = colnames(coef(fit_cbe)))
+contr_cbe = makeContrasts(DiagnosisAD - DiagnosisCon, levels = colnames(coef(fit_cbe)))
 fit_cbe <- contrasts.fit(fit_cbe, contr_cbe) %>%
         eBayes() %>%
         topTable(sort.by = NULL, number = Inf)
@@ -57,7 +63,7 @@ fit_cbe <- contrasts.fit(fit_cbe, contr_cbe) %>%
 design_tcx <- model.matrix(~ 0+Diagnosis, data = rna$TCX$pdata)
 transform_tcx <- voom(d_tcx, design_tcx, plot = F)
 fit_tcx <- lmFit(transform_tcx, design_tcx) 
-contr_tcx <- makeContrasts(DiagnosisAD - DiagnosisControl, levels = colnames(coef(fit_tcx)))
+contr_tcx <- makeContrasts(DiagnosisAD - DiagnosisCon, levels = colnames(coef(fit_tcx)))
 fit_tcx <- contrasts.fit(fit_tcx, contr_tcx)%>%
         eBayes() %>%
         topTable(number = Inf, sort.by = NULL)
