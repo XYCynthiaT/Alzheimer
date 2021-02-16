@@ -23,9 +23,9 @@ normalization <- function(region, geneType = NULL){
     } else {
         d0 <- DGEList(counts = rna[[region]]$edata, group = group)
     }
-    keep <- filterByExpr(d0) ## is it necessary for FPKM data?
+    keep <- filterByExpr(d0) 
     d0 <- d0[keep, , keep.lib.sizes=FALSE]
-    # calcNormFactors(d0)
+    calcNormFactors(d0)
 }
 # group <- factor(rna$CBE$pdata$Sex)
 # plotMDS(d_cbe, col = as.numeric(group))
@@ -42,8 +42,8 @@ d <- estimateDisp(d, design, robust=TRUE)
 # plotMeanVar(d, show.raw=TRUE, show.tagwise=TRUE, show.binned=TRUE)
 #------
 # # extracting normalized expression table
-# logcpm <- cpm(d, prior.count=0.5, log=TRUE)
-# saveRDS(logcpm, "../data/rosmap_normalized.rds")
+logcpm <- cpm(d, prior.count=0.5, log=TRUE)
+saveRDS(logcpm, "../data/rosmap_normalized.rds")
 
 # Fitting NB model
 fit <- glmQLFit(d, design, robust=TRUE)

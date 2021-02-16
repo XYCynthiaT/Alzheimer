@@ -15,6 +15,7 @@ region <- "dorsolateral"
 AD <- DE[[region]]$AD
 MCI <- DE[[region]]$MCI
 Other <- DE[[region]]$Other
+anova <- DE[[region]]$anova
 
 # The DE data has ensembl id and hgnc symbol. Now find entrez gene id for these
 # entries: 
@@ -79,6 +80,14 @@ Other_glyco_filtered1 <- Other_glyco %>%
 Other_glyco_filtered2 <- Other_glyco %>%
     dplyr::filter(ensembl_gene_id %in% AD_glyco_filtered2$ensembl_gene_id)
 
+anova_glyco <- anova %>%
+    right_join(AD_glyco[,c(1,2,5,6)], by = c("ensembl_gene_id", "hgnc_symbol")) %>%
+    dplyr::select(1:4, 8:9, 5:7)
+anova_glyco_filtered1 <- anova_glyco %>%
+    dplyr::filter(ensembl_gene_id %in% AD_glyco_filtered1$ensembl_gene_id)
+anova_glyco_filtered2 <- anova_glyco %>%
+    dplyr::filter(ensembl_gene_id %in% AD_glyco_filtered2$ensembl_gene_id)
+
 
 bm <- list(
     AD_glyco = AD_glyco,
@@ -89,7 +98,10 @@ bm <- list(
     MCI_glyco_sig_exclu = MCI_glyco_filtered2,
     Other_glyco = Other_glyco,
     Other_glyco_sig = Other_glyco_filtered1,
-    Other_glyco_sig_exclu = Other_glyco_filtered2
+    Other_glyco_sig_exclu = Other_glyco_filtered2,
+    anova_glyco = anova_glyco,
+    anova_glyco_sig = anova_glyco_filtered1,
+    anova_glyco_sig_exclu = anova_glyco_filtered2
 )
 
 wb <- createWorkbook()
@@ -97,14 +109,18 @@ sheet <- createSheet(wb, "glyco_sig_exclu")
 addDataFrame(bm$AD_glyco_sig_exclu, sheet=sheet, startColumn=1, row.names=T)
 addDataFrame(bm$MCI_glyco_sig_exclu[,7:10], sheet=sheet, startColumn=ncol(bm$AD_glyco_sig_exclu)+2, row.names=FALSE)
 addDataFrame(bm$Other_glyco_sig_exclu[,7:10], sheet=sheet, startColumn=ncol(bm$AD_glyco_sig_exclu)+2+4, row.names=FALSE)
+addDataFrame(bm$anova_glyco_sig_exclu[,7:9], sheet=sheet, startColumn=ncol(bm$AD_glyco_sig_exclu)+2+4+4, row.names=FALSE)
 
 sheet <- createSheet(wb, "glyco_sig")
 addDataFrame(bm$AD_glyco_sig, sheet=sheet, startColumn=1, row.names=T)
 addDataFrame(bm$MCI_glyco_sig[, 7:10], sheet=sheet, startColumn=ncol(bm$AD_glyco_sig)+2, row.names=FALSE)
 addDataFrame(bm$Other_glyco_sig[, 7:10], sheet=sheet, startColumn=ncol(bm$AD_glyco_sig)+2+4, row.names=FALSE)
+addDataFrame(bm$anova_glyco_sig[,7:9], sheet=sheet, startColumn=ncol(bm$AD_glyco_sig)+2+4+4, row.names=FALSE)
 
 sheet <- createSheet(wb, "glyco")
 addDataFrame(bm$AD_glyco, sheet=sheet, startColumn=1, row.names=T)
 addDataFrame(bm$MCI_glyco[,7:10], sheet=sheet, startColumn=ncol(bm$AD_glyco)+2, row.names=FALSE)
 addDataFrame(bm$Other_glyco[,7:10], sheet=sheet, startColumn=ncol(bm$AD_glyco)+2+4, row.names=FALSE)
+addDataFrame(bm$anova_glyco[,7:9], sheet=sheet, startColumn=ncol(bm$AD_glyco)+2+4+4, row.names=FALSE)
+
 saveWorkbook(wb, paste0("../output/rosmap_modified_", region, ".xlsx"))

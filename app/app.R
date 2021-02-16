@@ -25,12 +25,12 @@ router <- make_router(
 
 ui <- shinyUI(fluidPage(
     title = "Alzheimer",
-    router_ui()
+    router$ui
 ))
 
 server <- shinyServer(function(input, output, session) {
     credentials = callModule(authrServer, NULL)
-    router(input, output, session)
+    router$server(input, output, session)
     observe({
         if(is.null(credentials())){
             change_page("/login", mode = "push")
