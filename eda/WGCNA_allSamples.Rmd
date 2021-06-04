@@ -12,6 +12,9 @@ runtime: shiny
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# library(clusterProfiler)
+library(tibble)
+library(factoextra)
 library(plotly)
 library(shiny)
 library(HTSet)
@@ -172,8 +175,9 @@ renderPlot({
 })
 moduleLabels <- net$colors
 moduleColors <- labels2colors(net$colors)
-# MEs <- net$MEs
+MEs <- net$MEs
 geneTree <- net$dendrograms[[1]]
+colnames(MEs) <- colnames(MEs) %>% substring(3) %>% as.numeric %>% labels2colors() %>% paste0("ME",.)
 ```
 
 # 3. Relating modules to external information and identifying important genes
@@ -187,8 +191,9 @@ Answer: using biweight midcorrelations between each module eigenvalue and each o
 
 ```{r}
 # Recalculate MEs with color labels
-MEs0 <- moduleEigengenes(expr = datExpr, colors = moduleColors)$eigengenes
-MEs <- orderMEs(MEs0)
+# MEs0 <- moduleEigengenes(expr = datExpr, colors = moduleColors)$eigengenes
+# MEs <- orderMEs(MEs0)
+# Modify the colnames of MEs:
 moduleTraitCor <- bicor(MEs, datTrait, robustX = FALSE, robustY = FALSE, use = "p") # pairwise correlation
 moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples = nrow(datExpr))
 ```
@@ -446,7 +451,112 @@ renderPlotly({
 })
 ```
 
-# 5. Cytoscape Network
+# 5. Exploratory analysis
+
+```{r echo=FALSE}
+tags$div(
+    class = "row",
+    tags$div(
+        class="col-sm-6",
+        selectInput("module5", label = "Module", choices = modNames[-length(modNames)])
+    )
+)
+```
+
+```{r}
+blue <- reactive({
+    datExpr[,moduleColors==input$module5]
+})
+pca_blue <- reactive({
+    prcomp(blue(), center = T, scale. = T)
+})
+renderPlot({
+    plot(x = 1:100, y = MEs[,paste0("ME", input$module5)][1:100], "l")
+    # pca_blue$x[1:100, 1]/MEs$MEblue[1:100]
+})
+renderPlot({
+    plot(x = 1:100, y = pca_blue()$x[1:100,1], "l")
+})
+
+# variable contribution:
+renderDT({
+    res.var <- get_pca_var(pca_blue())
+    # plot(1:116, res.var$contrib[,1], "l")
+    contribution <- data.frame(
+        Ensembl = rownames(res.var$contrib),
+        Contribution = res.var$contrib[,1],
+        direction = sign(res.var$cor[,1])
+    ) %>%
+        left_join(glyco[,3:5], by = "Ensembl") %>%
+        dplyr::arrange(desc(Contribution)) 
+    datatable(contribution) %>%
+        formatSignif(columns = 2, digits = 3)
+})
+# ENSG to hgnc_symbol:
+blue2 <- reactive({
+    blue2 <- blue()
+    colname <- glyco[,c(3, 5)] %>%
+        distinct() %>%
+        dplyr::filter(Ensembl %in% colnames(blue())) %>%
+        column_to_rownames("Ensembl")
+    colnames(blue2) <- colname[colnames(blue()),1]
+    blue2
+}) 
+renderPlot({
+    res.var <- get_pca_var(pca_blue())
+    contribution <- data.frame(
+        Ensembl = rownames(res.var$contrib)[res.var$contrib[,1]>1],
+        Contribution = res.var$contrib[res.var$contrib[,1]>1,1]
+    ) %>%
+        left_join(glyco[,3:5], by = "Ensembl") %>%
+        dplyr::arrange(desc(Contribution)) 
+    pca_blue2 <- prcomp(blue2(), center = T, scale. = T)
+    par(mfrow = c(1, 2))
+    fviz_pca_var(pca_blue2)
+    fviz_pca_var(pca_blue2, select.var = list(name = contribution$Name[1:20]), repel = T)
+    
+})
+```
+
+## 5.1 GO enrichment
+
+```{r echo=FALSE}
+tags$div(
+    class = "row",
+    tags$div(
+        class="col-sm-6",
+        selectInput("bg", label = "Background", choices = c("given", "reference"))
+    )
+)
+```
+
+```{r}
+GOcollection = buildGOcollection(organism = "human")
+ensembl2entrez <- glyco$entrez
+names(ensembl2entrez) <- glyco$Ensembl
+entrez <- ensembl2entrez[names(moduleColors)]
+GOres <- list(given = NULL, reference = NULL)
+for (bg in names(GOres)) {
+    GOenrichment = enrichmentAnalysis(
+        classLabels = moduleColors, identifiers = entrez,
+        refCollection = GOcollection,
+        useBackground = bg,
+        threshold = 0.05,
+        thresholdType = "FDR",
+        getOverlapEntrez = TRUE,
+        getOverlapSymbols = TRUE,
+        ignoreLabels = "grey")
+    GOres[[bg]] <- GOenrichment$enrichmentTable
+}
+renderDT({
+    print(head(GOres[[input$bg]]))
+    datatable(GOres[[input$bg]])
+})
+# genes_modx <- entrez[moduleColors == "blue"]
+# blue_MF <- enrichGO(gene = genes_modx, OrgDb = org.Hs.eg.db, ont = "MF")
+```
+
+# 6. Cytoscape Network
 
 ```{r eval=FALSE}
 # Recalculate topological overlap if needed

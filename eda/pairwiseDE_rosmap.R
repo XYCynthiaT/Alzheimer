@@ -1,6 +1,6 @@
 setwd(dirname(parent.frame(2)$ofile))
 
-pkgs <- c("limma", "dplyr","HTSet", "edgeR")
+pkgs <- c("dplyr","HTSet", "edgeR")
 for (pkg in pkgs) {
     suppressPackageStartupMessages(library(pkg, character.only = T))
 }
@@ -31,8 +31,8 @@ normalization <- function(region, geneType = NULL){
 # plotMDS(d_cbe, col = as.numeric(group))
 
 # Design the model
-design <- model.matrix(~diagnosis, data = rna[[region]]$pdata)
-colnames(design) <- c("NCI", "MCI", "AD", "Other")
+design <- model.matrix(~diagnosis+msex, data = rna[[region]]$pdata)
+colnames(design) <- c("NCI", "MCI", "AD", "Other", "female")
 # Estimate the dispersion
 d <- normalization(region, geneType = "protein_coding")
 d <- estimateDisp(d, design, robust=TRUE)
@@ -43,7 +43,6 @@ d <- estimateDisp(d, design, robust=TRUE)
 #------
 # # extracting normalized expression table
 logcpm <- cpm(d, prior.count=0.5, log=TRUE)
-saveRDS(logcpm, "../data/rosmap_normalized.rds")
 
 # Fitting NB model
 fit <- glmQLFit(d, design, robust=TRUE)
@@ -87,7 +86,7 @@ MCI <- finalTable(region, resMCI)
 Other <- finalTable(region, resOther)
 
 anov <- cbind(AD[,1:4], resAnova$table[,5:7]) %>%
-    rename(stat = F, pval = PValue, padj =FDR)
+    dplyr::rename(stat = F, pval = PValue, padj =FDR)
 rownames(anov) <- NULL
 
 # Genes different among groups
@@ -117,4 +116,7 @@ bm <- list(
 )
 DE_rosmap <- list(dorsolateral = bm)
 
-saveRDS(DE_rosmap, "../data/DE_rosmap.rds")
+saveRDS(DE_rosmap, "../data/DE_rosmap_adj.rds")
+logcpm_pf <- rna$dorsolateral[rownames(logcpm),]
+logcpm_pf$edata <- logcpm
+saveRDS(logcpm_pf, "../data/rosmap_normalized_adj.rds")

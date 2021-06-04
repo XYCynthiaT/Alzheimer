@@ -6,35 +6,21 @@ for (pkg in pkgs) {
 }
 
 # Plotting
-logcpm <- readRDS("../data/mayo_normalized.rds")
-rna <- readRDS("../data/mayo.rds")
-DE <- readRDS("../data/DE_mayo.rds")
+logcpm <- readRDS("../data/mayo_normalized_adj.rds")
+DE <- readRDS("../data/DE_mayo_adj.rds")
 rownames(DE$TCX$AD) <- DE$TCX$AD$ensembl_gene_id
 rownames(DE$TCX$PA) <- DE$TCX$AD$ensembl_gene_id
 rownames(DE$TCX$PSP) <- DE$TCX$AD$ensembl_gene_id
 rownames(DE$TCX$anova) <- DE$TCX$AD$ensembl_gene_id
 
-# gene list
-# genes <- c('ENSG00000121578', 'ENSG00000134910',
-#            'ENSG00000253710', 'ENSG00000141429', 
-#            'ENSG00000101346', 'ENSG00000121578',
-#            'ENSG00000144057', 'ENSG00000126091', 
-#            'ENSG00000131386',
-#            'ENSG00000100979', 'ENSG00000130164',
-#            'ENSG00000165029', 'ENSG00000147852',
-#            'ENSG00000123384', 'ENSG00000120885',
-#            'ENSG00000057252')
-genes <- c('GALNTL6', 'ST3GAL3', 'ST6GAL2')
-g <- 3
-ens <- rownames(rna$TCX$edata)[rna$TCX$fdata$hgnc_symbol == genes[g]]
-DE$TCX$AD[ens,]
+genes <- c('MOG', 'GALNTL6', 'ST3GAL3', 'ST6GAL2', 'SLC35C1', 'GALNT15', 'NEU3', 'ARSG', 'B3GALNT1', 'LRP1')
 plots <- vector("list", length = length(genes))
 i = 1
 for (s in genes) {
-    ens <- rownames(rna$TCX$edata)[rna$TCX$fdata$hgnc_symbol == s]
+    ens <- featureNames(logcpm$TCX)[logcpm$TCX@fdata$hgnc_symbol == s]
     df <- data.frame(
-        count = logcpm$TCX[ens,],
-        diagnosis = rna$TCX$pdata$Diagnosis
+        count = logcpm$TCX$edata[ens,],
+        diagnosis = logcpm$TCX$pdata$Diagnosis
     ) 
     stat.test <- tibble(
         group1 = rep(1, 3),
@@ -46,7 +32,7 @@ for (s in genes) {
         geom_boxplot()+
         geom_jitter(width = 0.1) +
         ylab("logcpm") +
-        labs(title = paste0(s, ", ANOVA Test: p.adj=", signif(DE$TCX$anova[ens,'padj'], digits = 3))) +
+        labs(title = paste0(s, " in TCX, ANOVA Test: p.adj=", signif(DE$TCX$anova[ens,'padj'], digits = 3))) +
         theme_bw() +
         stat_pvalue_manual(
             stat.test, 
@@ -55,93 +41,68 @@ for (s in genes) {
         )
     i <- i+1
 }
+g=1
+ens <- rownames(logcpm$TCX$edata)[logcpm$TCX$fdata$hgnc_symbol == genes[g]]
+DE$TCX$AD[ens,]
 
-# ST3GAL3, GALNT11, GALNT17
-## Mayo
-genes <- c('ENSG00000126091', 
-           'ENSG00000178234',
-           'ENSG00000185274')
-df <- data.frame(
-    count = logcpm[genes[1],],
-    diagnosis = rna$TCX$pdata$Diagnosis
-) 
-stat.test <- tibble(
-    group1 = rep(1, 3),
-    group2 = c(2, 3, 4),
-    p.adj = c(DE$TCX$PA[genes[1],'padj'], DE$TCX$PSP[genes[1],'padj'], DE$TCX$AD[genes[1],'padj']) %>%
-        signif(digits = 3)
-) 
-ST3GAL3 <- ggplot(df, aes(diagnosis, count, color = diagnosis)) +
-    geom_boxplot()+
-    geom_jitter(width = 0.1) +
-    ylab("logcpm") +
-    labs(title = paste0("ST3GAL3 in TCX", ", ANOVA Test: p.adj=", signif(DE$TCX$anova[genes[1],'padj'], digits = 3))) +
-    theme_bw() +
-    stat_pvalue_manual(
-        stat.test, 
-        y.position = max(df$count), step.increase = 0.1,
-        label = "p.adj"
-    )
 ## ROSMAP
-logcpm <- readRDS("../data/rosmap_normalized.rds")
-rna <- readRDS("../data/rosmap.rds")
-DE <- readRDS("../data/DE_rosmap.rds")
+logcpm <- readRDS("../data/rosmap_normalized_adj.rds")
+DE <- readRDS("../data/DE_rosmap_adj.rds")
 rownames(DE[[1]]$AD) <- DE[[1]]$AD$ensembl_gene_id
 rownames(DE[[1]]$MCI) <- DE[[1]]$MCI$ensembl_gene_id
 rownames(DE[[1]]$Other) <- DE[[1]]$Other$ensembl_gene_id
 rownames(DE[[1]]$anova) <- DE[[1]]$anova$ensembl_gene_id
-symbols <- c('GALNTL6', 'ST3GAL3', 'ST6GAL2')
-genes <- rownames(rna[[1]]$edata)[rna[[1]]$fdata$hgnc_symbol %in% symbols]
-g <- 3
+symbols <- c('MOG', 'GALNTL6', 'ST3GAL3', 'ST6GAL2', 'SLC35C1', 'GALNT15', 'NEU3', 'ARSG', 'B3GALNT1')
+g <- 1
+gene <- rownames(logcpm$edata)[logcpm$fdata$hgnc_symbol==symbols[g]]
 df <- data.frame(
-    count = logcpm[genes[g],],
-    diagnosis = rna[[1]]$pdata$diagnosis
+    count = logcpm$edata[gene,],
+    diagnosis = logcpm$pdata$diagnosis
 ) 
 stat.test <- tibble(
     group1 = rep(1, 3),
     group2 = c(2, 3, 4),
-    p.adj = c(DE[[1]][["MCI"]][genes[g],'padj'], DE[[1]][["AD"]][genes[g],'padj'], DE[[1]][["Other"]][genes[g],'padj']) %>%
+    p.adj = c(DE[[1]][["MCI"]][gene,'padj'], DE[[1]][["AD"]][gene,'padj'], DE[[1]][["Other"]][gene,'padj']) %>%
         signif(digits = 3)
 ) 
 ggplot(df, aes(diagnosis, count, color = diagnosis)) +
     geom_boxplot()+
     geom_jitter(width = 0.1) +
     ylab("logcpm") +
-    labs(title = paste0(symbols[g], " in DLPFC", ", ANOVA Test: p.adj=", signif(DE[[1]][["anova"]][genes[g],'padj'], digits = 3))) +
+    labs(title = paste0(symbols[g], " in DLPFC", ", ANOVA Test: p.adj=", signif(DE[[1]][["anova"]][gene,'padj'], digits = 3))) +
     theme_bw() +
     stat_pvalue_manual(
         stat.test, 
         y.position = max(df$count), step.increase = 0.1,
         label = "p.adj"
     )
-DE[[1]][["AD"]][genes[g],]
+DE[[1]][["AD"]][gene,]
 ## MSBB
-logcpm <- readRDS("../data/msbb_normalized.rds")
-rna <- readRDS("../data/msbb.rds")
-DE <- readRDS("../data/DE_msbb.rds")
-region <- "BM22"
-rna <- subset_samples(rna, rna$pdata$BrodmannArea == region)
+logcpm <- readRDS("../data/msbb_normalized_adj.rds")
+DE <- readRDS("../data/DE_msbb_adj.rds")
+region <- "BM10"
 rownames(DE[[region]]$AD) <- DE[[region]]$AD$ensembl_gene_id
 rownames(DE[[region]]$transition) <- DE[[region]]$transition$ensembl_gene_id
 rownames(DE[[region]]$anova) <- DE[[region]]$anova$ensembl_gene_id
-symbols <- c('GALNTL6', 'ST3GAL3')
-genes <- rownames(rna$edata)[rna$fdata$hgnc_symbol %in% symbols]
+symbols <- c('MOG', 'GALNTL6', 'ST6GAL2', 'ST3GAL3', 'SLC35C1', 'GALNT15', 'NEU3', 'ARSG', 'B3GALNT1')
 g <- 1
+gene <- rownames(logcpm[[region]]$edata)[logcpm[[region]]$fdata$hgnc_symbol == symbols[g]]
 df <- data.frame(
-    count = logcpm[[region]][genes[g],],
-    diagnosis = rna$pdata$diagnosis
-) 
+    count = logcpm[[region]]$edata[gene,],
+    diagnosis = logcpm[[region]]$pdata$diagnosis
+) %>%
+    filter(diagnosis != "Transition")
 stat.test <- tibble(
-    group1 = rep(1, 2),
-    group2 = c(2, 3),
-    p.adj = c(DE[[region]][["transition"]][genes[g],'padj'], DE[[region]][["AD"]][genes[g],'padj']) %>%
+    group1 = 1,
+    group2 = c(2),
+    p.adj = c(DE[[region]][["AD"]][gene,'padj']) %>%
         signif(digits = 3)
 ) 
 ggplot(df, aes(diagnosis, count, color = diagnosis)) +
     geom_boxplot()+
     geom_jitter(width = 0.1) +
     ylab("logcpm") +
-    labs(title = paste0(symbols[g], " in ", region, ", ANOVA Test: p.adj=", signif(DE[[region]][["anova"]][genes[g],'padj'], digits = 3))) +
+    labs(title = paste0(symbols[g], " in ", region)) +
     theme_bw() +
     stat_pvalue_manual(
         stat.test, 
@@ -149,4 +110,4 @@ ggplot(df, aes(diagnosis, count, color = diagnosis)) +
         label = "p.adj"
     )
 # DE info:
-DE[[region]][["AD"]][genes[g],]
+DE[[region]][["AD"]][gene,]

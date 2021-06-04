@@ -1,0 +1,302 @@
+---
+title: "Analysis Genes from a Review Paper"
+output: html_notebook
+---
+
+```{r}
+library(readxl)
+library(pheatmap)
+library(xlsx)
+library(tidyverse)
+
+glyco <- readRDS("../data/glyco.rds")
+glyco2 <- readRDS("../data/glyco_Reactome.rds")
+```
+
+# Overview
+```{r}
+table(glyco$Class)
+```
+
+```{r}
+tcx <- read_excel("../output/mayo_modified_paper_TCX.xlsx",
+                  sheet = 2, range = cell_cols("B:K"), col_names = T)
+bm22 <- read_excel("../output/msbb_modified_paper_BM22.xlsx",
+                   sheet = 2, range = cell_cols("B:K"), col_names = T)
+bm36 <- read_excel("../output/msbb_modified_paper_BM36.xlsx",
+                   sheet = 2, range = cell_cols("B:K"), col_names = T)
+dpc <- read_excel("../output/rosmap_modified_paper_dorsolateral.xlsx",
+                  sheet = 2, range = cell_cols("B:K"), col_names = T)
+bm10 <- read_excel("../output/msbb_modified_paper_BM10.xlsx",
+                   sheet = 2, range = cell_cols("B:K"), col_names = T)
+bm44 <- read_excel("../output/msbb_modified_paper_BM44.xlsx",
+                   sheet = 2, range = cell_cols("B:K"), col_names = T)
+cbe <- read_excel("../output/mayo_modified_paper_CBE.xlsx",
+                  sheet = 2, range = cell_cols("B:K"), col_names = T)
+
+# tcx2 <- read_excel("../output/mayo_modified_reactome+glycolipids_TCX.xlsx",
+#                   sheet = 2, range = cell_cols("B:J"), col_names = T)
+# tcx_N <- (filter(tcx, Class == "N-Glycan"|Class=="N-glycosylation"))
+# tcx2_N <- (filter(tcx2, Class == "N-Glycan"|Class=="N-glycosylation"))
+# tcx2_N[is.na(match(tcx2_N$hgnc_symbol, tcx_N$hgnc_symbol)),]
+# bm362 <- read_excel("../output/msbb_modified_reactome+glycolipids_BM36.xlsx",
+#                    sheet = 2, range = cell_cols("B:J"), col_names = T)
+# bm36_N <- (filter(bm36, Class == "N-Glycan"|Class=="N-glycosylation"))
+# bm362_N <- (filter(bm362, Class == "N-Glycan"|Class=="N-glycosylation"))
+# bm362_N[is.na(match(bm362_N$hgnc_symbol, bm36_N$hgnc_symbol)),]
+# bm442 <- read_excel("../output/msbb_modified_reactome+glycolipids_BM44.xlsx",
+#                    sheet = 2, range = cell_cols("B:J"), col_names = T)
+# bm44_N <- (filter(bm44, Class == "N-Glycan"|Class=="N-glycosylation"))
+# bm442_N <- (filter(bm442, Class == "N-Glycan"|Class=="N-glycosylation"))
+# bm442_N[is.na(match(bm442_N$hgnc_symbol, bm44_N$hgnc_symbol)),]
+# cbe2 <- read_excel("../output/mayo_modified_reactome+glycolipids_CBE.xlsx",
+#                    sheet = 2, range = cell_cols("B:J"), col_names = T)
+# cbe_N <- (filter(cbe, Class == "N-Glycan"|Class=="N-glycosylation"))
+# cbe2_N <- (filter(cbe2, Class == "N-Glycan"|Class=="N-glycosylation"))
+# cbe2_N[is.na(match(cbe2_N$hgnc_symbol, cbe_N$hgnc_symbol)),]
+
+
+regions <- list(tcx, bm22, bm36, bm44,bm10, dpc, cbe)
+names(regions) <- c('tcx', 'bm22', 'bm36', 'bm44', 'bm10', 'dpc', 'cbe')
+# N-glycan
+sapply(regions, function(x)nrow(filter(x, Class == "N-Glycan"|Class=="N-glycosylation")))
+# N-glycan enzymes
+sapply(regions, function(x)nrow(filter(x, Class == "N-Glycan")))
+# N-glycan transporters
+sapply(regions, function(x)nrow(filter(x, Class=="N-glycosylation")))
+# O-glycan
+sapply(regions, function(x)nrow(filter(x, Class == "O-GalNAc")))
+# O-glycan non-enzyme
+sapply(regions, function(x)nrow(filter(x, Class == "O-glycosylation")))
+# glycolipid
+sapply(regions, function(x)nrow(filter(x, Class == "Glycolipid")))
+# non-emzyme
+sapply(regions, function(x)nrow(filter(x, Class == "Glycosphingolipid")))
+# elongation, branching
+sapply(regions, function(x)nrow(filter(x, Class == "Elongation.branching")))
+# Capping
+sapply(regions, function(x)nrow(filter(x, Class == "Capping")))
+
+```
+
+```{r}
+## Times of apprearance of genes
+count_tcx <- select(tcx, c("hgnc_symbol", "logFC", "Class")) %>%
+    distinct() %>%
+    mutate(region="temporal")
+count_bm22 <- select(bm22, c("hgnc_symbol", "logFC", "Class")) %>%
+    distinct() %>%
+    mutate(region="bm22")
+count_bm36 <- select(bm36, c("hgnc_symbol", "logFC", "Class")) %>%
+    distinct() %>%
+    mutate(region="bm36")
+count_dpc <- select(dpc, c("hgnc_symbol", "logFC", "Class")) %>%
+    distinct() %>%
+    mutate(region="DLPFC")
+count_bm10 <- select(bm10, c("hgnc_symbol", "logFC", "Class")) %>%
+    distinct() %>%
+    mutate(region="bm10")
+count_bm44 <- select(bm44, c("hgnc_symbol", "logFC", "Class")) %>%
+    distinct() %>%
+    mutate(region="bm44")
+count_cbe <- select(cbe, c("hgnc_symbol", "logFC", "Class")) %>%
+    distinct() %>%
+    mutate(region="cerebellum")
+
+count <- rbind(count_tcx, count_bm22, count_bm36, count_dpc, count_bm10, count_bm44) %>%
+    filter(Class != "Sulfotransferases")
+# Split into N-/O-
+count_N <- filter(count, Class=="N-Glycan")
+count_O <- filter(count, Class=="O-GalNAc")
+count_L <- filter(count, Class=="Glycolipid")
+count_E <- filter(count, Class=="Elongation.branching")
+count_C <- filter(count, Class=="Capping")
+```
+
+```{r}
+# count the times a gene present in brain regions
+countSummary <- function(x){
+    x %>%
+        distinct() %>%
+        group_by(hgnc_symbol) %>%
+        summarise(present=n()) %>%
+        arrange(desc(present))
+}
+# overlapped genes
+topGenes <- function(x, count_summary, n_overlapped=1) {
+    filter(x, hgnc_symbol %in% filter(count_summary, present>=n_overlapped)$hgnc_symbol) %>% 
+        mutate(hgnc_symbol=factor(hgnc_symbol, levels = unique(count_summary$hgnc_symbol))) %>%
+        arrange(hgnc_symbol) %>%
+        mutate(region = factor(region, levels = c("DLPFC", "bm44", "temporal", "bm36", "bm10", "bm22")),
+               direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down")))
+}
+
+```
+
+# Genes initiate N-Glycans  
+
+```{r}
+# dotplot
+plotDot <- function(count_top){
+    ggplot(count_top, aes(x = region, fill = direction, y = hgnc_symbol)) +
+        geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 2, binwidth = 0.5)+
+        theme_bw()
+}
+## N-glyco
+count_N_summary <- countSummary(count_N)
+count_N_top <- topGenes(count_N, count_N_summary)
+(dot_N <- plotDot(count_N_top))
+```
+# Genes for N-glycan transporter, accessory components
+
+```{r fig.height=6}
+## N-glyco non-glycosyltransferase
+count_NN <- filter(count, Class=="N-glycosylation")
+count_NN_summary <- countSummary(count_NN)
+count_NN_top <- topGenes(count_NN, count_NN_summary, 4)
+(dot_NN <- plotDot(count_NN_top))
+```
+
+# Genes for O-GalNAc initiation
+
+```{r}
+count_O_summary <- countSummary(count_O)
+count_O_top <- topGenes(count_O, count_O_summary)
+(dot_O <- plotDot(count_O_top))
+```
+
+# Genes for O-glycan transporter, accessory components
+
+```{r fig.height=6}
+## O-glyco non-glycosyltransferase
+count_OO <- filter(count, Class=="O-glycosylation")
+count_OO_summary <- countSummary(count_OO)
+count_OO_top <- topGenes(count_OO, count_OO_summary)
+(dot_OO <- plotDot(count_OO_top))
+```
+
+# Genes for glycolipid initiation
+
+```{r}
+count_L_summary <- countSummary(count_L)
+count_L_top <- topGenes(count_L, count_L_summary)
+(dot_L <- plotDot(count_L_top))
+```
+
+# Genes for glycolipid transporter, accessory components
+
+```{r fig.height=6}
+## glycolipid non-glycosyltransferase
+count_l <- filter(count, Class=="Glycosphingolipid")
+count_l_summary <- countSummary(count_l)
+count_l_top <- topGenes(count_l, count_l_summary)
+(dot_l <- plotDot(count_l_top))
+```
+
+# Genes for elongation and branching
+
+```{r}
+count_E_summary <- countSummary(count_E)
+count_E_top <- topGenes(count_E, count_E_summary)
+(dot_E <- plotDot(count_E_top))
+```
+
+# Genes for capping
+
+```{r}
+count_C_summary <- countSummary(count_C)
+count_C_top <- topGenes(count_C, count_C_summary)
+(dot_C <- plotDot(count_C_top))
+```
+
+```{r}
+tcx_a <- read_excel("../output/mayo_modified_paper_TCX.xlsx",
+                  sheet = 3, range = cell_cols("F:K"), col_names = T)
+bm22_a <- read_excel("../output/msbb_modified_paper_BM22.xlsx",
+                   sheet = 3, range = cell_cols("F:K"), col_names = T)
+bm36_a <- read_excel("../output/msbb_modified_paper_BM36.xlsx",
+                   sheet = 3, range = cell_cols("F:K"), col_names = T)
+dpc_a <- read_excel("../output/rosmap_modified_paper_dorsolateral.xlsx",
+                  sheet = 3, range = cell_cols("F:K"), col_names = T)
+bm10_a <- read_excel("../output/msbb_modified_paper_BM10.xlsx",
+                   sheet = 3, range = cell_cols("F:K"), col_names = T)
+bm44_a <- read_excel("../output/msbb_modified_paper_BM44.xlsx",
+                   sheet = 3, range = cell_cols("F:K"), col_names = T)
+cbe_a <- read_excel("../output/mayo_modified_paper_CBE.xlsx",
+                  sheet = 3, range = cell_cols("F:K"), col_names = T)
+
+df<- left_join(tcx_a, bm22_a, by=c("Name", "Class"), suffix = c(".TCX", ".bm22")) %>%
+    left_join(bm36_a, by=c("Name", "Class")) %>%
+    left_join(dpc_a, by=c("Name", "Class"), suffix = c(".bm36", ".DLPFC")) %>%
+    left_join(bm10_a, by=c("Name", "Class")) %>%
+    left_join(bm44_a, by=c("Name", "Class"), suffix = c(".bm10", ".bm44")) %>%
+    left_join(cbe_a, by=c("Name", "Class")) 
+```
+
+# Genes for N-glycan
+
+```{r}
+filter(df, Class=="N-Glycan") %>%
+    select(-Class) %>%
+    rename(logFC.CBE=logFC, stat.CBE=stat, pval.CBE=pval, padj.CBE=padj) %>%
+    pivot_longer(cols = 2:(ncol(df)-1), names_to = c(".value", "region"), names_pattern = "(.*)\\.(.*)") %>%
+    rename(hgnc_symbol=Name) %>%
+    mutate(region = factor(region, levels = c("DLPFC", "bm44", "TCX", "bm36", "bm10", "bm22", "CBE")),
+           sig = ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)),
+           direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down"))) %>%
+    ggplot(aes(x = region, color = direction, y = hgnc_symbol, size = sig)) +
+        geom_point()+
+    # scale_color_manual(values = c("orange", "steelblue")) +
+        theme_bw()
+```
+
+# Genes for elongation and branching
+
+```{r}
+filter(df, Class=="Elongation.branching") %>%
+    select(-Class) %>%
+    rename(logFC.CBE=logFC, stat.CBE=stat, pval.CBE=pval, padj.CBE=padj) %>%
+    pivot_longer(cols = 2:(ncol(df)-1), names_to = c(".value", "region"), names_pattern = "(.*)\\.(.*)") %>%
+    rename(hgnc_symbol=Name) %>%
+    mutate(region = factor(region, levels = c("DLPFC", "bm44", "TCX", "bm36", "bm10", "bm22", "CBE")),
+           sig = ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)),
+           direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down"))) %>%
+    ggplot(aes(x = region, color = direction, y = hgnc_symbol, size = sig)) +
+        geom_point()+
+    # scale_color_manual(values = c("orange", "steelblue")) +
+        theme_bw()
+```
+
+# Genes for capping
+```{r fig.height=6}
+filter(df, Class=="Capping") %>%
+    select(-Class) %>%
+    rename(logFC.CBE=logFC, stat.CBE=stat, pval.CBE=pval, padj.CBE=padj) %>%
+    pivot_longer(cols = 2:(ncol(df)-1), names_to = c(".value", "region"), names_pattern = "(.*)\\.(.*)") %>%
+    rename(hgnc_symbol=Name) %>%
+    mutate(region = factor(region, levels = c("DLPFC", "bm44", "TCX", "bm36", "bm10", "bm22", "CBE")),
+           sig = ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)),
+           direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down"))) %>%
+    ggplot(aes(x = region, color = direction, y = hgnc_symbol, size = sig)) +
+        geom_point()+
+    # scale_color_manual(values = c("orange", "steelblue")) +
+        theme_bw()
+# capping
+# df_C <- filter(df, Class=="Capping") %>%
+#     select(-Class) %>%
+#     select("Name", starts_with("logFC")) %>%
+#     column_to_rownames("Name")
+
+# df_C[df_C<= -max(df_C[!is.na(df_C)])] <- -max(df_C[!is.na(df_C)])
+# (p_C <- pheatmap(df_C, color = colorRampPalette(c("navy", "white", "red"))(50), show_rownames = T, show_colnames = T, cluster_cols = T))
+```
+
+```{r}
+df_C_pval <- filter(df, Class=="Capping") %>%
+    select(-Class, -starts_with("stat")) %>%
+    column_to_rownames("Name")
+df_C_pval[p_C$tree_row$order,] %>%
+    signif(digits = 2) %>%
+    DT::datatable(list(mode = 'multiple', selected = c(1)))
+```
+

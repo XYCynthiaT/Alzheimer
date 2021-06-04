@@ -7,6 +7,7 @@ for (pkg in pkgs) {
 
 # load files from data
 rna <- readRDS("../data/mayo.rds")
+rna$TCX$pdata <- dplyr::rename(rna$TCX$pdata, Sex=Gender)
 # run once----
 # mart <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
 #-------------
@@ -37,8 +38,8 @@ for (region in names(rna)) {
     # plotMDS(d_cbe, col = as.numeric(group))
     
     # Design the model
-    design <- model.matrix(~Diagnosis, data = rna[[region]]$pdata)
-    colnames(design) <- c("Con", "PA", "PSP", "AD")
+    design <- model.matrix(~Diagnosis+Sex, data = rna[[region]]$pdata)
+    colnames(design) <- c("Con", "PA", "PSP", "AD", "Male")
     # Estimate the dispersion
     d <- normalization(region, geneType = "protein_coding")
     d <- estimateDisp(d, design, robust=TRUE)
@@ -54,7 +55,9 @@ for (region in names(rna)) {
     
     # extracting normalized expression table
     logcpm <- cpm(d, prior.count=0.5, log=TRUE)
-    logcpm_mayo[[region]] <- logcpm
+    logcpm_pf <- rna[[region]][rownames(logcpm),]
+    logcpm_pf$edata <- logcpm
+    logcpm_mayo[[region]] <- logcpm_pf
     
     # Fitting NB model
     fit <- glmQLFit(d, design, robust=TRUE)
@@ -99,7 +102,7 @@ for (region in names(rna)) {
     PSP <- finalTable(region, resPSP)
     
     anov <- cbind(AD[,1:4], resAnova$table[,5:7]) %>%
-        rename(stat = F, pval = PValue, padj =FDR)
+        dplyr::rename(stat = F, pval = PValue, padj =FDR)
     rownames(anov) <- NULL
     
     # Genes different among groups
@@ -131,8 +134,8 @@ for (region in names(rna)) {
 }
 
 
-saveRDS(DE_mayo, "../data/DE_mayo.rds")
-saveRDS(logcpm_mayo, "../data/mayo_normalized.rds")
+saveRDS(DE_mayo, "../data/DE_mayo_adj.rds")
+saveRDS(logcpm_mayo, "../data/mayo_normalized_adj.rds")
 
 # region <- 'TCX'
 # normalization <- function(region, geneType = NULL){

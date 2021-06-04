@@ -24,7 +24,7 @@ rna <- list(
 
 # edgeR -------------------------------------------------------------------
 
-# region <- 'BM10'
+# region <- 'BM44'
 DE_msbb <- vector("list", length(rna))
 logcpm_msbb <- vector("list", length(rna))
 names(DE_msbb) <- names(rna)
@@ -47,8 +47,8 @@ for (region in names(rna)) {
     # plotMDS(d_cbe, col = as.numeric(group))
     
     # Design the model
-    design <- model.matrix(~diagnosis, data = rna[[region]]$pdata)
-    colnames(design) <- c("NCI", "Transition", "AD")
+    design <- model.matrix(~diagnosis+sex, data = rna[[region]]$pdata)
+    colnames(design) <- c("NCI", "Transition", "AD", "male")
     # Estimate the dispersion
     d <- normalization(region, geneType = "protein_coding")
     d <- estimateDisp(d, design, robust=TRUE)
@@ -58,7 +58,9 @@ for (region in names(rna)) {
     #------
     # extracting normalized expression table
     logcpm <- cpm(d, prior.count=0.5, log=TRUE)
-    logcpm_msbb[[region]] <- logcpm
+    logcpm_pf <- rna[[region]][rownames(logcpm),]
+    logcpm_pf$edata <- logcpm
+    logcpm_msbb[[region]] <- logcpm_pf
     # Fitting NB model
     fit <- glmQLFit(d, design, robust=TRUE)
     # plotQLDisp(fit)
@@ -98,7 +100,7 @@ for (region in names(rna)) {
     transition <- finalTable(region, resTransition)
 
     anov <- cbind(AD[,1:4], resAnova$table[,4:6]) %>%
-        rename(stat = F, pval = PValue, padj =FDR)
+        dplyr::rename(stat = F, pval = PValue, padj =FDR)
     rownames(anov) <- NULL
 
     # Genes different among groups
@@ -128,5 +130,5 @@ for (region in names(rna)) {
 }
 
 
-saveRDS(DE_msbb, "../data/DE_msbb.rds")
-saveRDS(logcpm_msbb, "../data/msbb_normalized.rds")
+saveRDS(DE_msbb, "../data/DE_msbb_adj.rds")
+saveRDS(logcpm_msbb, "../data/msbb_normalized_adj.rds")

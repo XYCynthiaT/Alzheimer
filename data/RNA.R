@@ -29,6 +29,9 @@ for (i in seq_along(files)) {
                 column_to_rownames("feature") %>%
                 as.matrix()
         ## pdata
+        metadata <- read.csv(
+                list.files(path, pattern = "metadata", full.names = T)
+        )
         pdata <- read.csv(
                 list.files(path, pattern = "covariates", full.names = T)[i],
                 header = T, 
@@ -38,8 +41,10 @@ for (i in seq_along(files)) {
                 mutate(
                         Diagnosis = factor(Diagnosis, labels = c("Con", "PA", "PSP", "AD"),
                                            levels = c("Control", "PathologicAging", "PSP", "AD")
-                        )
+                        ),
+                        individualID = as.integer(sub("_.*", "", SampleID))
                 ) %>%
+                left_join(metadata[, c(1,5)], by = "individualID") %>%
                 column_to_rownames("SampleID")
         edata_mayo <- edata_mayo[, rownames(pdata)]
         
@@ -74,7 +79,7 @@ metadata <- read.csv(
                 )
         )) %>%
         mutate(
-                diagnosis = factor(diagnosis, labels = c("NCI", "Transition", "AD"))
+                diagnosis = factor(diagnosis, levels = c("NCI", "Transition", "AD"))
         )
 
 edata <- fread(files, sep = "\t", header = TRUE)

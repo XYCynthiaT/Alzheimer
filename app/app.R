@@ -1,55 +1,78 @@
 source("global.R")
-source("user_base.R")
-source("de.R")
-source("pca.R")
-source("pathway.R")
-source("dashboard.R")
-source("authr.R")
+source("mayo.R")
+source("msbb.R")
+source("rosmap.R")
+source("regions.R")
 
-router <- make_router(
-    default = route(
-        "login", 
-        ui = authrUI(NULL), 
-        server = function(input, output, session) {
-            callModule(authrServer, NULL)
-        }
-    ),
-    route(
-        "dashboard", 
-        ui = dashboardUI("dashboard"), 
-        server = function(input, output, session) {
-            dashboardServer("dashboard")
-        }
-    )
-)
+dashboardUI <- function(id) {
+        ns <- NS(id)
+        header <- dashboardHeader(
+                title = "AD RNAseq",
+                tags$li(
+                        class = "nav-item",
+                        tags$a(
+                                class = "btn btn-danger action-button",
+                                id = "logout-button",
+                                type = "button",
+                                icon("sign-out-alt"), "Log out"
+                        )
+                )
+        )
+        
+        sidebar <- dashboardSidebar(
+                sidebarMenu(
+                        # first menu
+                        menuItem("Mayo (TC, CBE)", tabName = "mayo"),
+                        # second menu
+                        menuItem("MSBB (FP, STG, IFG, PHG)", tabName = "msbb"),
+                        # third menu
+                        menuItem("ROSMAP (DLPFC)", tabName = "rosmap"),
+                        menuItem("Summary across regions", tabName = "regions")
+                )
+        )
+        
+        body <- dashboardBody(
+                shinyjs::useShinyjs(),
+                tags$link(href="styles.css", rel="stylesheet"),
+                tabItems(
+                        # the first subtab content
+                        tabItem(
+                                tabName = "mayo",
+                                mayoUI(ns("mayo"))
+                        ),
+                        # the second subtab content
+                        tabItem(
+                                tabName = "msbb",
+                                msbbUI(ns("msbb"))
+                        ),
+                        # the third subtab content
+                        tabItem(
+                                tabName = "rosmap",
+                                rosmapUI(ns("rosmap"))
+                        ),
+                        tabItem(
+                                tabName = "regions",
+                                regsUI(ns("regions"))
+                        )
+                )
+        )
+        dashboardPage(header, sidebar, body)
+}
+        
 
-ui <- shinyUI(fluidPage(
-    title = "Alzheimer",
-    router$ui
-))
+dashboardServer <- function(id) {
+        moduleServer(
+                id,
+                function(input, output, session) {
+                        mayoServer("mayo")
+                        msbbServer("msbb")
+                        rosmapServer("rosmap")
+                        regsServer("regions")
+                }
+        )
+}
+server = function(input, output, session) {
+        dashboardServer("a")
+}
 
-server <- shinyServer(function(input, output, session) {
-    credentials = callModule(authrServer, NULL)
-    router$server(input, output, session)
-    observe({
-        if(is.null(credentials())){
-            change_page("/login", mode = "push")
-        }else if (is.null(credentials()$user_auth)) {
-            change_page("/login", mode = "push")
-        }else if(credentials()$user_auth){
-            change_page("/dashboard", mode = "push")
-        } else {
-            print(credentials()$user_auth)
-            change_page("/login", mode = "push")
-        }
-    })
-    observe({
-        if(is_page("dashboard")) {
-            session$onFlushed(function(){
-                shinyjs::addClass(selector = "html body", class = "skin-blue")
-            }, once = FALSE)
-        }
-    })
-})
-
-shinyApp(ui, server)
+shinyApp(ui = dashboardUI("a"), server = server)
