@@ -8,6 +8,7 @@ library(readxl)
 library(pheatmap)
 library(xlsx)
 library(tidyverse)
+library(grid)
 
 glyco <- readRDS("../data/glyco.rds")
 glyco2 <- readRDS("../data/glyco_Reactome.rds")
@@ -235,52 +236,83 @@ df<- left_join(tcx_a, bm22_a, by=c("Name", "Class"), suffix = c(".TCX", ".bm22")
 
 # Genes for N-glycan
 
+7/2 Remove CBE for match the AAIC abstract.
+
 ```{r}
-filter(df, Class=="N-Glycan") %>%
+# Add lobe info
+TL <- textGrob("Temporal lobe", gp=gpar(fontsize=12))
+FL <- textGrob("Frontal lobe", gp=gpar(fontsize=12))
+
+p1 <- filter(df, Class=="N-Glycan") %>%
     select(-Class) %>%
     rename(logFC.CBE=logFC, stat.CBE=stat, pval.CBE=pval, padj.CBE=padj) %>%
     pivot_longer(cols = 2:(ncol(df)-1), names_to = c(".value", "region"), names_pattern = "(.*)\\.(.*)") %>%
     rename(hgnc_symbol=Name) %>%
-    mutate(region = factor(region, levels = c("DLPFC", "bm44", "TCX", "bm36", "bm10", "bm22", "CBE")),
-           sig = ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)),
-           direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down"))) %>%
-    ggplot(aes(x = region, color = direction, y = hgnc_symbol, size = sig)) +
-        geom_point()+
-    # scale_color_manual(values = c("orange", "steelblue")) +
-        theme_bw()
+    mutate(region = factor(region, levels = c("DLPFC", "bm44", "bm10", "TCX", "bm36", "bm22", "CBE")),
+           # sig = ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)),
+           Sig = factor(ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)), labels = c("Not sig", "pval < 0.05", "adj.pval < 0.05")),
+           Direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down"))) %>%
+    filter(region != "CBE") %>%
+    ggplot(aes(x = region, color = Direction, y = hgnc_symbol, size = Sig)) +
+    geom_point()+
+    scale_color_manual(values = c("#fba31b", "#490d65")) +
+    theme_bw()+
+    coord_cartesian(xlim=c(1,6), ylim=c(1,26), clip="off") +
+    annotate("segment", x = 1, xend = 3, y = -1.5, yend = -1.5) + 
+    annotate("segment", x = 4, xend = 6, y = -1.5, yend = -1.5) + 
+    annotation_custom(FL,xmin=1,xmax=3,ymin=-2,ymax=-2) +
+    annotation_custom(TL,xmin=4,xmax=6,ymin=-2,ymax=-2)
+# ggsave("../img/N-glycan_dots.png", p1, width = 6, height = 9, scale = 1)
 ```
 
 # Genes for elongation and branching
 
 ```{r}
-filter(df, Class=="Elongation.branching") %>%
+p_e <- filter(df, Class=="Elongation.branching") %>%
     select(-Class) %>%
     rename(logFC.CBE=logFC, stat.CBE=stat, pval.CBE=pval, padj.CBE=padj) %>%
     pivot_longer(cols = 2:(ncol(df)-1), names_to = c(".value", "region"), names_pattern = "(.*)\\.(.*)") %>%
     rename(hgnc_symbol=Name) %>%
-    mutate(region = factor(region, levels = c("DLPFC", "bm44", "TCX", "bm36", "bm10", "bm22", "CBE")),
-           sig = ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)),
-           direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down"))) %>%
-    ggplot(aes(x = region, color = direction, y = hgnc_symbol, size = sig)) +
-        geom_point()+
-    # scale_color_manual(values = c("orange", "steelblue")) +
-        theme_bw()
+    mutate(region = factor(region, levels = c("DLPFC", "bm44", "bm10", "TCX", "bm36", "bm22", "CBE")),
+           # sig = ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)),
+           Sig = factor(ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)), labels = c("Not sig", "pval < 0.05", "adj.pval < 0.05")),
+           Direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down"))) %>%
+    filter(region != "CBE") %>%
+    .[complete.cases(.),] %>%
+    ggplot(aes(x = region, color = Direction, y = hgnc_symbol, size = Sig)) +
+    geom_point()+
+    scale_color_manual(values = c("#fba31b", "#490d65")) +
+    theme_bw()+
+    coord_cartesian(xlim=c(1,6), ylim=c(1,18), clip="off") +
+    annotate("segment", x = 1, xend = 3, y = -2, yend = -2) + 
+    annotate("segment", x = 4, xend = 6, y = -2, yend = -2) + 
+    annotation_custom(FL,xmin=1,xmax=3,ymin=-2.5,ymax=-2.5) +
+    annotation_custom(TL,xmin=4,xmax=6,ymin=-2.5,ymax=-2.5)
 ```
 
 # Genes for capping
 ```{r fig.height=6}
-filter(df, Class=="Capping") %>%
+p_c <- filter(df, Class=="Capping") %>%
     select(-Class) %>%
     rename(logFC.CBE=logFC, stat.CBE=stat, pval.CBE=pval, padj.CBE=padj) %>%
     pivot_longer(cols = 2:(ncol(df)-1), names_to = c(".value", "region"), names_pattern = "(.*)\\.(.*)") %>%
     rename(hgnc_symbol=Name) %>%
-    mutate(region = factor(region, levels = c("DLPFC", "bm44", "TCX", "bm36", "bm10", "bm22", "CBE")),
-           sig = ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)),
-           direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down"))) %>%
-    ggplot(aes(x = region, color = direction, y = hgnc_symbol, size = sig)) +
-        geom_point()+
-    # scale_color_manual(values = c("orange", "steelblue")) +
-        theme_bw()
+    mutate(region = factor(region, levels = c("DLPFC", "bm44", "bm10", "TCX", "bm36", "bm22", "CBE")),
+           # sig = ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)),
+           Sig = factor(ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)), labels = c("Not sig", "pval < 0.05", "adj.pval < 0.05")),
+           Direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down"))) %>%
+    filter(region != "CBE") %>%
+    .[complete.cases(.),] %>%
+    ggplot(aes(x = region, color = Direction, y = hgnc_symbol, size = Sig)) +
+    geom_point()+
+    scale_color_manual(values = c("#fba31b", "#490d65")) +
+    theme_bw()+
+    coord_cartesian(xlim=c(1,6), ylim=c(1,31), clip="off") +
+    annotate("segment", x = 1, xend = 3, y = -2, yend = -2) + 
+    annotate("segment", x = 4, xend = 6, y = -2, yend = -2) + 
+    annotation_custom(FL,xmin=1,xmax=3,ymin=-2.5,ymax=-2.5) +
+    annotation_custom(TL,xmin=4,xmax=6,ymin=-2.5,ymax=-2.5)
+
 # capping
 # df_C <- filter(df, Class=="Capping") %>%
 #     select(-Class) %>%
@@ -298,5 +330,167 @@ df_C_pval <- filter(df, Class=="Capping") %>%
 df_C_pval[p_C$tree_row$order,] %>%
     signif(digits = 2) %>%
     DT::datatable(list(mode = 'multiple', selected = c(1)))
+```
+# Gene for type O-GalNAc glycosylation
+
+```{r}
+p_o <- filter(df, Class=="O-GalNAc") %>%
+    select(-Class) %>%
+    rename(logFC.CBE=logFC, stat.CBE=stat, pval.CBE=pval, padj.CBE=padj) %>%
+    pivot_longer(cols = 2:(ncol(df)-1), names_to = c(".value", "region"), names_pattern = "(.*)\\.(.*)") %>%
+    rename(hgnc_symbol=Name) %>%
+    mutate(region = factor(region, levels = c("DLPFC", "bm44", "bm10", "TCX", "bm36", "bm22", "CBE")),
+           # sig = ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)),
+           Sig = factor(ifelse(padj<0.05, 2, ifelse(pval<0.05, 1, 0)), labels = c("Not sig", "pval < 0.05", "adj.pval < 0.05")),
+           Direction = factor(ifelse(logFC>0, "up", "down"), levels = c("up", "down"))) %>%
+    filter(region != "CBE") %>%
+    .[complete.cases(.),] %>%
+    ggplot(aes(x = region, color = Direction, y = hgnc_symbol, size = Sig)) +
+    geom_point()+
+    scale_color_manual(values = c("#fba31b", "#490d65")) +
+    theme_bw()+
+    coord_cartesian(xlim=c(1,6), ylim=c(1,23), clip="off") +
+    annotate("segment", x = 1, xend = 3, y = -1.5, yend = -1.5) + 
+    annotate("segment", x = 4, xend = 6, y = -1.5, yend = -1.5) + 
+    annotation_custom(FL,xmin=1,xmax=3,ymin=-2,ymax=-2) +
+    annotation_custom(TL,xmin=4,xmax=6,ymin=-2,ymax=-2)
+
+```
+
+Make figure for the AAIC poster
+
+```{r}
+library(cowplot)
+mylegend <- get_legend(p1+theme(legend.position = "bottom"))
+p <- plot_grid(
+    p1+theme(legend.position = "none"), 
+    p_o+theme(legend.position = "none"), 
+    p_c+theme(legend.position = "none"), 
+    labels = c("A", "B", "C"), 
+    label_size = 12,
+    ncol = 3
+    # axis = "b"
+) %>%
+    plot_grid(
+        mylegend,
+        nrow = 2,
+        rel_heights = c(1, .2)
+    )
+ggsave("../img/dot_points.png", p, width = 8, height = 3, scale = 2)
+```
+
+Boxplot for gene expression across multiple brain regions.
+```{r}
+library(ggpubr)
+logcpm_mayo <- readRDS("../data/mayo_normalized_adj.rds")
+logcpm_msbb <- readRDS("../data/msbb_normalized_adj.rds")
+logcpm <- readRDS("../data/rosmap_normalized_adj.rds")
+getPValues <- function(symbol="LRP1"){
+    df[grep(symbol, df$Name),] %>%
+        select(-Class) %>%
+        rename(logFC.CBE=logFC, stat.CBE=stat, pval.CBE=pval, padj.CBE=padj) %>%
+        pivot_longer(cols = 2:(ncol(df)-1), names_to = c(".value", "region"), names_pattern = "(.*)\\.(.*)") %>%
+        rename(hgnc_symbol=Name) %>%
+        mutate(region = factor(region, levels = c("DLPFC", "bm44", "bm10", "TCX", "bm36", "bm22", "CBE"))) %>%
+        filter(region != "CBE")
+}
+# pvals <- getPValues("GALNTL6")
+box_regs <- function(symbol="GALNTL6", ADonly=FALSE){
+    pvals <- getPValues(symbol)
+    ens <- featureNames(logcpm)[logcpm$fdata$hgnc_symbol==symbol]
+    dlpfc <- data.frame(
+        Region = "DLPFC",
+        Diagnosis = logcpm$pdata$diagnosis,
+        Logcpm = logcpm$edata[ens,]
+    )
+    tcx <- data.frame(
+        Region = "TCX",
+        Diagnosis = logcpm_mayo$TCX$pdata$Diagnosis,
+        Logcpm = logcpm_mayo$TCX$edata[ens,]
+    ) %>%
+        mutate(Diagnosis = sub("Con", "NCI", Diagnosis))
+    df <- rbind(dlpfc, tcx)
+    for (reg in names(logcpm_msbb)) {
+        bm <- data.frame(
+            Region = reg,
+            Diagnosis = logcpm_msbb[[reg]]$pdata$diagnosis,
+            Logcpm = logcpm_msbb[[reg]]$edata[ens,]
+        )
+        df <- rbind(df,bm)
+    }
+    if (ADonly) {
+        df <- df %>%
+            filter(Diagnosis %in% c('NCI', "AD")) %>%
+            mutate(Diagnosis = factor(Diagnosis, levels = c("NCI", "AD")))
+    } else {
+        df <- df %>%
+            filter(Diagnosis != "Transition") %>%
+            mutate(Diagnosis = factor(Diagnosis, levels = c("NCI", "MCI", "PA", "AD", "PSP", "Other")))
+        
+    }
+    stat.test <- tibble(
+        group1 = c(0.7, 1.7, 2.7, 3.7, 4.6, 5.5),
+        group2 = c(1.3, 2.3, 3.3, 4.3, 5.1, 6.1),
+        p.adj = c(pvals[pvals$region=="bm10",]$padj, pvals[pvals$region=="bm22",]$padj, pvals[pvals$region=="bm36",]$padj, pvals[pvals$region=="bm44",]$padj, pvals[pvals$region=="DLPFC",]$padj, pvals[pvals$region=="TCX",]$padj) 
+        )%>%
+            signif(digits = 2)
+    # print(stat.test)
+    ggplot(df, aes(Region, Logcpm, color=Diagnosis))+
+        geom_boxplot(aes(color=Diagnosis))+
+        geom_point(position = position_jitterdodge(jitter.width = 0.1))+
+        theme_bw() +
+        scale_color_manual(values = inferno(7))+
+        stat_pvalue_manual(
+            stat.test,
+            y.position = max(df$Logcpm)*1.05, step.increase = 0,
+            label = "p.adj"
+        )+
+        lims(y = c(NA, max(df$Logcpm)*1.1))+
+        labs(y = paste0(symbol, " (LogCPM)"))
+}
+GALNTL6 <- box_regs("GALNTL6")
+GALNT17 <- box_regs("GALNT17")
+GALNT11 <- box_regs("GALNT11")
+ST3GAL3 <- box_regs("ST3GAL3")
+ST6GAL2 <- box_regs("ST6GAL2")
+```
+
+```{r}
+mylegend2 <- get_legend(GALNT11+theme(legend.position = "bottom")+ guides(color=guide_legend(nrow=1,byrow=TRUE)))
+p_box <- plot_grid(
+    GALNT11+theme(legend.position = "none"), 
+    GALNT17+theme(legend.position = "none"), 
+    ST6GAL2+theme(legend.position = "none"),
+    ST3GAL3+theme(legend.position = "none"),
+    # GALNTL6+theme(legend.position = "none", axis.title.x = element_blank(), axis.text.x = element_blank()), 
+    labels = c("A", "B", "C", "D"), 
+    label_size = 12,
+    ncol = 4,
+    align = "h"
+    # axis = "b"
+) %>%
+    plot_grid(
+        mylegend2,
+        nrow = 2,
+        rel_heights = c(1, .1)
+    )
+# p_cbox <- plot_grid(
+#     ST6GAL2+theme(legend.position = "none"),
+#     ST3GAL3+theme(legend.position = "none"),
+#     labels = c("C", "D"), 
+#     label_size = 12,
+#     ncol = 2,
+#     rel_heights = c(1, 1)
+# )
+# p_box <- plot_grid(
+#     p_obox, p_cbox,
+#     nrow = 2
+# ) %>%
+#     plot_grid(
+#         mylegend2,
+#         ncol = 2,
+#         rel_widths = c(1, .2)
+#     )
+ggsave("../img/boxes.png", p_box, width = 8, height = 1.5, scale = 2)
 ```
 
