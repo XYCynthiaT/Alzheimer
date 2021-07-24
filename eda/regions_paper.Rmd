@@ -210,6 +210,7 @@ count_C_top <- topGenes(count_C, count_C_summary)
 (dot_C <- plotDot(count_C_top))
 ```
 
+left_join lost some genes, change to full_join
 ```{r}
 tcx_a <- read_excel("../output/mayo_modified_paper_TCX.xlsx",
                   sheet = 3, range = cell_cols("F:K"), col_names = T)
@@ -226,12 +227,12 @@ bm44_a <- read_excel("../output/msbb_modified_paper_BM44.xlsx",
 cbe_a <- read_excel("../output/mayo_modified_paper_CBE.xlsx",
                   sheet = 3, range = cell_cols("F:K"), col_names = T)
 
-df<- left_join(tcx_a, bm22_a, by=c("Name", "Class"), suffix = c(".TCX", ".bm22")) %>%
-    left_join(bm36_a, by=c("Name", "Class")) %>%
-    left_join(dpc_a, by=c("Name", "Class"), suffix = c(".bm36", ".DLPFC")) %>%
-    left_join(bm10_a, by=c("Name", "Class")) %>%
-    left_join(bm44_a, by=c("Name", "Class"), suffix = c(".bm10", ".bm44")) %>%
-    left_join(cbe_a, by=c("Name", "Class")) 
+df<- full_join(tcx_a, bm22_a, by=c("Name", "Class"), suffix = c(".TCX", ".bm22")) %>%
+    full_join(bm36_a, by=c("Name", "Class")) %>%
+    full_join(dpc_a, by=c("Name", "Class"), suffix = c(".bm36", ".DLPFC")) %>%
+    full_join(bm10_a, by=c("Name", "Class")) %>%
+    full_join(bm44_a, by=c("Name", "Class"), suffix = c(".bm10", ".bm44")) %>%
+    full_join(cbe_a, by=c("Name", "Class")) 
 ```
 
 # Genes for N-glycan
@@ -382,6 +383,7 @@ ggsave("../img/dot_points.png", p, width = 8, height = 3, scale = 2)
 Boxplot for gene expression across multiple brain regions.
 ```{r}
 library(ggpubr)
+library(viridis)
 logcpm_mayo <- readRDS("../data/mayo_normalized_adj.rds")
 logcpm_msbb <- readRDS("../data/msbb_normalized_adj.rds")
 logcpm <- readRDS("../data/rosmap_normalized_adj.rds")
