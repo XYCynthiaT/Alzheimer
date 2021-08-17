@@ -7,5 +7,6 @@ MSDPlot_tcx.png
 app/user_base.R
 app/rsconnect/
 output/
-img/
 literature/
+.DS_Store
+*/.DS_Store

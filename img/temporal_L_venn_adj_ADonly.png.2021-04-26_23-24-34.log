@@ -1,0 +1,34 @@
+INFO [2021-04-26 23:24:34] $x
+INFO [2021-04-26 23:24:34] list(filter(tcx, Class == class)$hgnc_symbol, filter(bm22, Class == 
+INFO [2021-04-26 23:24:34]     class)$hgnc_symbol, filter(bm36, Class == class)$hgnc_symbol)
+INFO [2021-04-26 23:24:34] 
+INFO [2021-04-26 23:24:34] $category.names
+INFO [2021-04-26 23:24:34] category.names
+INFO [2021-04-26 23:24:34] 
+INFO [2021-04-26 23:24:34] $filename
+INFO [2021-04-26 23:24:34] filename
+INFO [2021-04-26 23:24:34] 
+INFO [2021-04-26 23:24:34] $output
+INFO [2021-04-26 23:24:34] [1] TRUE
+INFO [2021-04-26 23:24:34] 
+INFO [2021-04-26 23:24:34] $imagetype
+INFO [2021-04-26 23:24:34] [1] "png"
+INFO [2021-04-26 23:24:34] 
+INFO [2021-04-26 23:24:34] $scaled
+INFO [2021-04-26 23:24:34] [1] TRUE
+INFO [2021-04-26 23:24:34] 
+INFO [2021-04-26 23:24:34] $col
+INFO [2021-04-26 23:24:34] [1] "black"
+INFO [2021-04-26 23:24:34] 
+INFO [2021-04-26 23:24:34] $fill
+INFO [2021-04-26 23:24:34] (ggsci::pal_jco())(3)
+INFO [2021-04-26 23:24:34] 
+INFO [2021-04-26 23:24:34] $cat.col
+INFO [2021-04-26 23:24:34] (ggsci::pal_jco())(3)
+INFO [2021-04-26 23:24:34] 
+INFO [2021-04-26 23:24:34] $cat.cex
+INFO [2021-04-26 23:24:34] [1] 0.8
+INFO [2021-04-26 23:24:34] 
+INFO [2021-04-26 23:24:34] $margrin
+INFO [2021-04-26 23:24:34] [1] 0
+INFO [2021-04-26 23:24:34] 
